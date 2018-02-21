@@ -11,6 +11,8 @@ namespace LOLFirstPick
 		public static readonly string APP_DIR;
 		public static string SCRIPT;
 
+		public static string SelectedChampionName;
+
 		static GlobalVar( )
 		{
 			APP_DIR = System.Windows.Forms.Application.StartupPath;

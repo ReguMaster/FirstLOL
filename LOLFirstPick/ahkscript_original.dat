@@ -1,0 +1,118 @@
+#NoTrayIcon
+
+Start := false
+Found1 := false
+Found2 := false
+Found3 := false
+SearchSuccess := false
+Status := 0
+
+Start := true
+
+Loop
+{
+	if ( Found3 = false )
+	{
+		ImageSearch, FoundX, FoundY, 0, 0, A_ScreenWidth, A_ScreenHeight, *60 %A_WorkingDir%\imagebase\chatFindBase.bmp
+
+		if ( ErrorLevel = 0 )
+		{
+			FoundY := FoundY + 10
+			FoundX := FoundX - 150
+			
+			Send {Click %FoundX% %FoundY%}
+			#LineScript
+			Send {Enter}
+		
+			Status := 1
+			Found3 := true
+		}
+		else
+		{
+			continue
+		}
+	}
+
+
+	if ( SearchSuccess = false )
+	{
+		ImageSearch, FoundX, FoundY, 0, 0, A_ScreenWidth, A_ScreenHeight, *50 %A_WorkingDir%\imagebase\searchTextBox.bmp
+
+		if ( ErrorLevel = 0 )
+		{
+			FoundX := FoundX + 20
+			Send {Click %FoundX% %FoundY%}
+			
+			Clipboard = #ChampionName
+			Send, ^v
+			;Clipboard =
+			
+			Sleep, 500
+			
+			Status := 2
+			SearchSuccess := true
+		}
+	}
+
+	if ( SearchSuccess = false )
+	{
+		continue
+	}
+
+	if ( Found1 = false )
+	{
+		ImageSearch, FoundX, FoundY, 0, 0, A_ScreenWidth, A_ScreenHeight, *50 %A_WorkingDir%\imagebase\champSquareFinder.bmp
+
+		FoundX := FoundX + 50
+		FoundY := FoundY + 10
+		
+		if ( ErrorLevel = 0 )
+		{
+			Found1 := true
+			Status := 3
+			Send {Click %FoundX% %FoundY%}
+		}
+	}
+
+
+	if ( Found1 = true && Found2 = false )
+	{
+		ImageSearch, FoundX, FoundY, 0, 0, A_ScreenWidth, A_ScreenHeight, *50 %A_WorkingDir%\imagebase\pickButton.bmp
+
+		if ( ErrorLevel = 0 )
+		{
+			Found2 := true
+			Status := 4
+			
+			#ForceReadyScript	;Send {Click %FoundX% %FoundY%}
+		}
+		else
+		{
+			;Found1 := false
+		}
+	}
+	
+	if ( Start = false )
+	{
+		break
+	}
+	else
+	{
+		if ( Found1 && Found2 && Found3 )
+		{
+			Status := 5
+			Start := false
+			ExitApp
+			break
+		}
+		
+	}
+}
+
+return
+
+f12::
+
+ExitApp
+
+return

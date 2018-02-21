@@ -13,7 +13,6 @@ using System.Security.Cryptography;
 
 namespace LOLFirstPick.Lib
 {
-
 	public enum GlobalErrorResultCode
 	{
 		Success,

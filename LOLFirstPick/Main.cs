@@ -11,6 +11,9 @@ using LOLFirstPick.Interface;
 using LOLFirstPick.Lib;
 using System.Threading;
 using AhkWrapper;
+using System.IO;
+
+//해상도 달라질 시 이미지 검색 안되는 오류 있음.
 
 namespace LOLFirstPick
 {
@@ -25,6 +28,16 @@ namespace LOLFirstPick
 		public Main( )
 		{
 			InitializeComponent( );
+		}
+
+		public void RefreshChampionSquare( )
+		{
+			if ( string.IsNullOrEmpty( GlobalVar.SelectedChampionName ) ) return;
+
+			string[ ] files = Directory.GetFiles( @"D:\Dropbox\Dev\C#-2\LOLFirstPick\LOLFirstPick\bin\Debug\champions", "*.png" );
+
+			this.CHAMP_IMAGE.Image = Image.FromFile( GlobalVar.APP_DIR + @"\champions\" + GlobalVar.SelectedChampionName + ".png" );
+			this.CHAMP_TITLE_LABEL.Text = GlobalVar.SelectedChampionName;
 		}
 
 		private void APP_TITLE_BAR_MouseMove( object sender, MouseEventArgs e )
@@ -149,7 +162,7 @@ namespace LOLFirstPick
 			};
 
 
-			AutoHotkeyWorker.Start( LINE_CHAT_TEXTBOX.Text, FORCE_READY_CHECKBOX.Checked, "제드" );
+			AutoHotkeyWorker.Start( LINE_CHAT_TEXTBOX.Text, FORCE_READY_CHECKBOX.Checked, GlobalVar.SelectedChampionName );
 
 			this.LOADING_GIFIMAGE.Visible = true;
 			this.START_BUTTON.Text = "선픽 중지";
@@ -165,8 +178,14 @@ namespace LOLFirstPick
 		{
 			if ( FORCE_READY_CHECKBOX.Checked )
 			{
-				NotifyBox.Show( this, "퍼스트 롤", "꼴픽 자제를 부탁드립니다.", NotifyBoxType.OK, NotifyBoxIcon.Information );
+				NotifyBox.Show( this, "퍼스트 롤", "클-린한 리그 오브 레전드를 위하여 꼴픽은 자제해주세요.", NotifyBoxType.OK, NotifyBoxIcon.Information );
 			}
+		}
+
+		private void CHAMPION_SELECT_BUTTON_Click( object sender, EventArgs e )
+		{
+			ChampionSelection Form = new ChampionSelection( );
+			Form.Show( );
 		}
 	}
 }

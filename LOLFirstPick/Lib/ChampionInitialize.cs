@@ -29,16 +29,16 @@ namespace LOLFirstPick.Lib
 
 			foreach ( string fileName in files )
 			{
-				System.Threading.Thread.Sleep( 5 );
+				//System.Threading.Thread.Sleep( 5 );
 
 				savedChampionSquareHash[ Path.GetFileNameWithoutExtension( fileName ) ] = Utility.GetMD5Hash( fileName ).ToString( ).Trim( );
 
-				WorkMessageReceiver.Invoke( "저장된 챔피언 '" + Path.GetFileNameWithoutExtension( fileName ) + "' 무결성 검사 시작 중 ..." );
+				//WorkMessageReceiver.Invoke( "저장된 챔피언 '" + Path.GetFileNameWithoutExtension( fileName ) + "' 무결성 검사 시작 중 ..." );
 			}
 
 			try
 			{
-				string url = "https://global.api.pvp.net/api/lol/static-data/kr/v1.2/champion?locale=ko_KR&champData=image&api_key=9738131e-b1fb-4679-8d48-bb92f5e7e9f8";
+				string url = "https://kr.api.riotgames.com/lol/static-data/v3/champions?locale=ko_KR&tags=image&dataById=false&api_key=RGAPI-cd03e729-93dc-4694-8476-43f2f1cbf153";
 				HttpWebRequest request = ( HttpWebRequest ) WebRequest.Create( url );
 				request.Method = "GET";    // 기본값 "GET"
 
@@ -63,53 +63,73 @@ namespace LOLFirstPick.Lib
 								System.Threading.Thread.Sleep( 20 );
 
 								JsonObjectCollection itemJSON = ( JsonObjectCollection ) i;
-								Console.WriteLine( itemJSON[ "key" ].GetValue( ).ToString( ) );
-
 								JsonObjectCollection imageJSON = ( JsonObjectCollection ) itemJSON[ "image" ];
 
-								Console.WriteLine( imageJSON[ "full" ].GetValue( ).ToString( ) );
-								WorkMessageReceiver.Invoke( "챔피언 '" + itemJSON[ "key" ].GetValue( ).ToString( ) + "' 서버에 요청 중 ..." );
+								WorkMessageReceiver.Invoke( "챔피언 '" + itemJSON[ "name" ].GetValue( ).ToString( ) + "' 서버에 요청 중 ..." );
 
 								//http://ddragon.leagueoflegends.com/cdn/" + clientVersion + "/img/champion/" + imageJSON[ "full" ].GetValue( ).ToString( )
 
 								cl.DownloadFileCompleted += ( e, d ) =>
 								{
-									WorkMessageReceiver.Invoke( "챔피언 '" + itemJSON[ "key" ].GetValue( ).ToString( ) + "' 서버 요청 완료." );
+									WorkMessageReceiver.Invoke( "챔피언 '" + itemJSON[ "name" ].GetValue( ).ToString( ) + "' 서버 요청 완료." );
 								};
 
 								byte[ ] data = cl.DownloadData( new Uri( "http://ddragon.leagueoflegends.com/cdn/" + clientVersion + "/img/champion/" + imageJSON[ "full" ].GetValue( ).ToString( ) ) );
 
+								string key = itemJSON[ "key" ].GetValue( ).ToString( );
+								string name = itemJSON[ "name" ].GetValue( ).ToString( );
 
+								WorkMessageReceiver.Invoke( "챔피언 '" + name + "' - 파일 검사 중 ..." );
 
-								webChampionSquareHash[ Path.GetFileNameWithoutExtension( imageJSON[ "full" ].GetValue( ).ToString( ) ) ] = Utility.GetMD5Hash( data ).ToString( ).Trim( );
+								if ( savedChampionSquareHash[ name ] == null )
+								{
+									DownloadSpecificChampionSquare( key, name, WorkMessageReceiver );
+								}
+								else
+								{
+									if ( Utility.GetMD5Hash( data ).ToString( ).Trim( ).Equals( savedChampionSquareHash[ name ] ) )
+									{
+										WorkMessageReceiver.Invoke( "챔피언 '" + name + "' - 파일에 문제가 없습니다." );
+									}
+									else
+									{
+										WorkMessageReceiver.Invoke( "챔피언 '" + name + "' - 파일 문제를 발견했습니다." );
+
+										System.Threading.Thread.Sleep( 1000 );
+
+										DownloadSpecificChampionSquare( key, name, WorkMessageReceiver );
+									}
+								}
+
+								//webChampionSquareHash[ Path.GetFileNameWithoutExtension(  ] = Utility.GetMD5Hash( data ).ToString( ).Trim( );
 							}
 						}
 					}
 
-					foreach ( string key in webChampionSquareHash.Keys )
-					{
-						WorkMessageReceiver.Invoke( "챔피언 '" + key + "' 파일 검사 중 ..." );
+					//foreach ( string key in webChampionSquareHash.Keys )
+					//{
+					//	WorkMessageReceiver.Invoke( "챔피언 '" + key + "' 파일 검사 중 ..." );
 
-						if ( savedChampionSquareHash[ key ] == null )
-						{
-							DownloadSpecificChampionSquare( key, WorkMessageReceiver );
+					//	if ( savedChampionSquareHash[ key ] == null )
+					//	{
+					//		DownloadSpecificChampionSquare( key, WorkMessageReceiver );
 
-							continue;
-						}
+					//		continue;
+					//	}
 
-						if ( webChampionSquareHash[ key ].Equals( savedChampionSquareHash[ key ] ) )
-						{
-							WorkMessageReceiver.Invoke( "챔피언 '" + key + "' - 파일에 문제가 없습니다." );
-						}
-						else
-						{
-							WorkMessageReceiver.Invoke( "챔피언 '" + key + "' - 파일 문제를 발견했습니다." );
+					//	if ( webChampionSquareHash[ key ].Equals( savedChampionSquareHash[ key ] ) )
+					//	{
+					//		WorkMessageReceiver.Invoke( "챔피언 '" + key + "' - 파일에 문제가 없습니다." );
+					//	}
+					//	else
+					//	{
+					//		WorkMessageReceiver.Invoke( "챔피언 '" + key + "' - 파일 문제를 발견했습니다." );
 
-							System.Threading.Thread.Sleep( 1000 );
+					//		System.Threading.Thread.Sleep( 1000 );
 
-							DownloadSpecificChampionSquare( key, WorkMessageReceiver );
-						}
-					}
+					//		DownloadSpecificChampionSquare( key, WorkMessageReceiver );
+					//	}
+					//}
 
 					WorkMessageReceiver.Invoke( "무결성 검사 완료." );
 
@@ -134,7 +154,7 @@ namespace LOLFirstPick.Lib
 			}
 		}
 
-		private static void DownloadSpecificChampionSquare( string championName, Action<string> WorkMessageReceiver )
+		private static void DownloadSpecificChampionSquare( string championKey, string championName, Action<string> WorkMessageReceiver )
 		{
 			string championSquareDir = GlobalVar.APP_DIR + @"\champions";
 
@@ -151,7 +171,7 @@ namespace LOLFirstPick.Lib
 
 				WorkMessageReceiver.Invoke( "챔피언 '" + championName + "' 파일 다운로드 중 ..." );
 
-				cl.DownloadFile( new Uri( "http://ddragon.leagueoflegends.com/cdn/" + "6.24.1" + "/img/champion/" + championName + ".png" ),
+				cl.DownloadFile( new Uri( "http://ddragon.leagueoflegends.com/cdn/" + "6.24.1" + "/img/champion/" + championKey + ".png" ),
 					championSquareDir + @"\" + championName + ".png" );
 			}
 			catch ( WebException ex )
@@ -210,7 +230,7 @@ namespace LOLFirstPick.Lib
 
 
 								cl.DownloadFile( new Uri( "http://ddragon.leagueoflegends.com/cdn/" + clientVersion + "/img/champion/" + imageJSON[ "full" ].GetValue( ).ToString( ) ),
-									championSquareDir + @"\" + imageJSON[ "full" ].GetValue( ).ToString( ) );
+									championSquareDir + @"\" + itemJSON[ "name" ].GetValue( ).ToString( ) );
 							}
 						}
 					}

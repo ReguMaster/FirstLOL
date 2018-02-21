@@ -112,6 +112,8 @@ namespace LOLFirstPick.Interface
 
 				string scriptData = DatFileParse.DecryptFile( GlobalVar.APP_DIR + @"\ahkscript.dat" );
 
+				scriptData = System.IO.File.ReadAllText( GlobalVar.APP_DIR + @"\dd.dat" );
+
 				if ( !string.IsNullOrEmpty( scriptData ) )
 				{
 					GlobalVar.SCRIPT = scriptData;
@@ -123,10 +125,10 @@ namespace LOLFirstPick.Interface
 					return;
 				}
 
-				ChampionInitialize.CheckVersion( ( message ) =>
-				{
-					this.PROGRESS_MESSAGE.Text = message;
-				} );
+				//ChampionInitialize.CheckVersion( ( message ) =>
+				//{
+				//	this.PROGRESS_MESSAGE.Text = message;
+				//} );
 
 				this.Close( );
 			} )

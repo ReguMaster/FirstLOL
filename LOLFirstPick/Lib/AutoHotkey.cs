@@ -46,7 +46,9 @@ namespace LOLFirstPick.Lib
 		public static bool FindLeagueofLegends( )
 		{
 			// http://happyguy81.tistory.com/52
-			IntPtr hwnd = FindWindow( null, "League Client" );
+			return true;
+
+			IntPtr hwnd = FindWindow( null, "League of Legends" );
 
 
 			if ( hwnd.ToInt32( ) > 0 )
@@ -80,6 +82,12 @@ namespace LOLFirstPick.Lib
 
 				for ( int i = 0; i < lineString.Length; i++ )
 				{
+					if ( (char)lineString[ i ] == 32 ) // 띄어쓰기 감지
+					{
+						lineStringBuilder.AppendLine( "Send {Space}" );
+						continue;
+					}
+
 					lineStringBuilder.AppendLine( "Send {" + lineString[ i ] + " 1}" );
 				}
 

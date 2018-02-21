@@ -1,0 +1,21 @@
+Status := 0
+
+Start := true
+
+Loop
+{
+	ImageSearch, FoundX, FoundY, 0, 0, A_ScreenWidth, A_ScreenHeight, *30 D:\Dropbox\Dev\C#-2\LOLFirstPick\LOLFirstPick\bin\Debug\img\K-003.bmp
+
+	if ( ErrorLevel = 0 )
+	{
+		Status := 1
+	}
+}
+
+return
+
+f12::
+
+ExitApp
+
+return

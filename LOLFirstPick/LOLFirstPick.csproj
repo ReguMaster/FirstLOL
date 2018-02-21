@@ -56,6 +56,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GlobalVar.cs" />
+    <Compile Include="Interface\ChampionSelection.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\ChampionSelection.Designer.cs">
+      <DependentUpon>ChampionSelection.cs</DependentUpon>
+    </Compile>
     <Compile Include="Interface\CustomInterface.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -90,6 +96,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Interface\ChampionSelection.resx">
+      <DependentUpon>ChampionSelection.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Interface\Initialize.resx">
       <DependentUpon>Initialize.cs</DependentUpon>
     </EmbeddedResource>
