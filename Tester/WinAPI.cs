@@ -35,7 +35,7 @@ namespace Tester
 			Minimized = 2,
 			Maximized = 3,
 		}
-		
+
 		//public enum WNDSTATE : int
 		//{
 		//	SW_HIDE = 0,
@@ -53,7 +53,7 @@ namespace Tester
 		//	SW_MAX = 10
 		//}
 
-		[DllImport( "user32.dll", EntryPoint = "mouse_event" )] // 입력 제어
+		[DllImport( "user32.dll", EntryPoint = "mouse_event" )]
 		public static extern void MouseEvent( uint dwFlags, uint dx, uint dy, int dwData, int dwExtraInfo );
 
 		[DllImport( "user32.dll", EntryPoint = "keybd_event" )]
@@ -62,13 +62,12 @@ namespace Tester
 		[DllImport( "user32.dll" )]
 		public static extern uint MapVirtualKey( int wCode, int wMapType );
 
-		[DllImport( "user32.dll" )] // 커서 위치 제어
+		[DllImport( "user32.dll" )]
 		public static extern int SetCursorPos( int x, int y );
 
+		//http://11cc.tistory.com/20 [LUCKY CODE]
 		[DllImport( "user32.dll" )]
 		internal static extern bool GetWindowPlacement( IntPtr hWnd, ref WINDOWPLACEMENT lpwndpl );
-
-		//출처: http://11cc.tistory.com/20 [LUCKY CODE]
 
 		[DllImport( "user32.dll" )]
 		public static extern IntPtr FindWindow( string lpClassName, string lpWindowName );
@@ -79,9 +78,9 @@ namespace Tester
 		[DllImport( "user32" )]
 		public static extern int SetWindowPos( IntPtr hwnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, int wFlags );
 
+		//http://lab.cliel.com/entry/SetWindowPos-Window종류및-크기와-표시-Level변경 [CLIEL LAB]
 		[DllImport( "user32" )]
 		public static extern int SetWindowPos( IntPtr hwnd, int hWndInsertAfter, int x, int y, int cx, int cy, int wFlags );
-		//출처: http://lab.cliel.com/entry/SetWindowPos-Window종류및-크기와-표시-Level변경 [CLIEL LAB]
 
 		public delegate IntPtr HookProc( int nCode, IntPtr wParam, IntPtr lParam );
 		public delegate IntPtr LowLevelKeyboardProc( int nCode, IntPtr wParam, IntPtr lParam );
@@ -106,13 +105,16 @@ namespace Tester
 		//MoveWindow 함수를 호출한다.
 		public static extern bool MoveWindow( IntPtr hwnd, int X, int Y, int nWidth, int nHeight, bool bRepaint );
 
-		public static void GetWindowPos( IntPtr hwnd, ref Point pos, ref Size size )
+		public static (Point pos, Size size) GetWindowPos( IntPtr hwnd )
 		{
 			WINDOWPLACEMENT wInf = new WINDOWPLACEMENT( );
 			wInf.length = Marshal.SizeOf( wInf );
 			GetWindowPlacement( hwnd, ref wInf );
-			size = new Size( wInf.normalPos.Right - ( wInf.normalPos.Left * 2 ), wInf.normalPos.Bottom - ( wInf.normalPos.Top * 2 ) );
-			pos = new Point( wInf.normalPos.Left, wInf.normalPos.Top );
+
+			return (
+				new Point( wInf.normalPos.Left, wInf.normalPos.Top ),
+				new Size( wInf.normalPos.Right - ( wInf.normalPos.Left * 2 ), wInf.normalPos.Bottom - ( wInf.normalPos.Top * 2 )
+			));
 		}
 	}
 }

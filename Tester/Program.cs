@@ -13,71 +13,101 @@ using YamlDotNet.RepresentationModel;
 
 namespace Tester
 {
-	static class AutoHotkeyWorker
+	static class AssistantAgentProvider
 	{
-		private static Thread ScriptThread;
-
-		public static int GetWorkerStatus( )
+		public enum AgentStatus : byte
 		{
-			string var = AutoHotkey.GetVar( "Status" );
+			IDLE,
+			GAME_FOUND
+		}
 
-			if ( string.IsNullOrEmpty( var ) )
-			{
-				var = "0";
-			}
-			return int.Parse( var );
+		private static Thread CheckerThread;
+		private static AgentStatus LocalStatus = AgentStatus.IDLE;
+
+		//public static int GetWorkerStatus( )
+		//{
+		//	if ( int.TryParse( AutoHotkey.GetVar( "Status" ), out int result ) )
+		//		return result;
+		//	else
+		//		return 0;
+		//}
+
+		//public static string GetWorkerStatus( )
+		//{
+		//	return AutoHotkey.GetVar( "Status" );
+		//}
+
+		public static AgentStatus GetStatus( )
+		{
+			if ( byte.TryParse( AutoHotkey.Var[ "Status" ], out byte result ) )
+				return ( AgentStatus ) result;
+			else
+				return AgentStatus.IDLE;
 		}
 
 		public static void Start( )
 		{
-			int status = -1;
+			LocalStatus = 0;
 
-			ScriptThread = new Thread( ( ) =>
+			Thread agentThread = new Thread( ( ) =>
 			{
+				AutoHotkey.ThreadFromText( File.ReadAllText( @"D:\Dropbox\Dev\C#-2\LOLFirstPick\Tester\ahkscript.red" ) );
 				Console.WriteLine( "AHK agent started." );
-				AutoHotkey.ThreadFromText( File.ReadAllText( @"D:\Dropbox\Dev\C#-2\LOLFirstPick\LOLFirstPick\ahkscript_original2.dat" ) );
 
-				while ( AutoHotkey.isRun( ) )
+				//while ( true )
+				//{
+				//	Console.WriteLine( "New Status : " + ahk.GetVar( "Status" ) );
+				//
+				//}
+				//AutoHotkeyEngine.Instance.(  );
+
+				while ( AutoHotkey.IsRunning( ) )
 				{
-					if ( status != GetWorkerStatus( ) )
+					if ( !LocalStatus.Equals( GetStatus( ) ) )
 					{
-						status = GetWorkerStatus( );
+						LocalStatus = GetStatus( );
+						Console.WriteLine( "New Status : " + LocalStatus );
 						//Console.WriteLine( "New Status : " + status.ToString( ) );
 
-						if ( status == 1 ) // 게임을 찾았습니다!
+						if ( LocalStatus.Equals( AgentStatus.GAME_FOUND ) ) // 게임을 찾았습니다!
 						{
 							Console.WriteLine( "GAME FOUND" );
 							Program.GameAgree( );
+							AutoHotkey.SetVar( "Status", "3" );
+
+							Thread.Sleep( 13000 );
 						}
 					}
 
-
-					//System.IO.File.AppendAllText( "lll.txt", AutoHotkey.GetVar( "Status" ) + "\r\n" );
-					System.Threading.Thread.Sleep( 100 );
+					Thread.Sleep( 100 );
 				}
 			} )
 			{
+				Name = "AssistantAgent_Checker",
+				Priority = ThreadPriority.Normal,
 				IsBackground = true
 			};
-			ScriptThread.SetApartmentState( ApartmentState.STA );
-			ScriptThread.Start( );
+			//ScriptThread.SetApartmentState( ApartmentState.STA );
+			agentThread.Start( );
+
+			CheckerThread = agentThread;
 		}
 
 		public static void Kill( )
 		{
-			if ( AutoHotkey.isRun( ) )
+			if ( AutoHotkey.IsRunning( ) )
 			{
 				Console.WriteLine( "AHK agent KILLED." );
 
-				if ( ScriptThread != null )
+				if ( CheckerThread != null && CheckerThread.IsAlive ) // TODO : 확인 바람
 				{
-					ScriptThread.Abort( );
-					ScriptThread = null;
+					CheckerThread.Abort( );
+					CheckerThread = null;
+					Console.WriteLine( "aborted" );
 				}
 
-				AutoHotkey.Kill( );
+				AutoHotkey.Terminate( );
 			}
-
 		}
 	}
 
@@ -122,14 +152,16 @@ namespace Tester
 		}*/
 
 		//private WinAPI.LowLevelKeyboardProc _proc = hookProc;
-		const int WH_MOUSE_LL = 14; // Номер глобального LowLevel-хука на клавиатуру
-		const int WM_KEYDOWN = 0x100; // Сообщения нажатия клавиши
+		//const int WH_MOUSE_LL = 14; // Номер глобального LowLevel-хука на клавиатуру
+		//const int WM_KEYDOWN = 0x100; // Сообщения нажатия клавиши
+
+		private static IntPtr LeagueClientHWND;
 
 		public static void SetHook( )
 		{
 			WinAPI.LowLevelKeyboardProc proc = new WinAPI.LowLevelKeyboardProc( ( int code, IntPtr wParam, IntPtr lParam ) =>
 			{
-			//	System.Diagnostics.Debug.WriteLine( code.ToString( ) );
+				//	System.Diagnostics.Debug.WriteLine( code.ToString( ) );
 				//Console.WriteLine( code.ToString( ) );
 
 				return WinAPI.CallNextHookEx( hhook, code, ( int ) wParam, lParam );
@@ -138,7 +170,7 @@ namespace Tester
 			//IntPtr hInstance = WinAPI.LoadLibrary( "User32" );
 			hhook = WinAPI.SetWindowsHookEx( 13, proc, Marshal.GetHINSTANCE( System.Reflection.Assembly.GetExecutingAssembly( ).GetModules( )[ 0 ] ), 0 );
 
-			Console.WriteLine( "Hooked - " + hhook.ToString() );
+			Console.WriteLine( "Hooked - " + hhook.ToString( ) );
 		}
 
 		public static void UnHook( )
@@ -146,56 +178,55 @@ namespace Tester
 			WinAPI.UnhookWindowsHookEx( hhook );
 			Console.WriteLine( "UnHooked" );
 		}
-		
+
 
 		[STAThread]
 		static void Main( string[ ] args )
 		{
 			Console.Title = "FirstLOL";
-			IntPtr hwnd = WinAPI.FindWindow( "RCLIENT", "League of Legends" );
-			IntPtr hwnd2 = WinAPI.FindWindowEx( hwnd, 0, "CefBrowserWindow", "" );
-			
-			Console.WriteLine( "League of Legends(RCLIENT) handle : " + hwnd.ToInt64( ) );
-			Console.WriteLine( "CefBrowserWindow(RCLIENT CHILD) handle : " + hwnd2.ToInt64( ) );
 
-			const short SWP_NOSIZE = 1;
-			const short SWP_NOZORDER = 0X4;
-			const int SWP_SHOWWINDOW = 0x0040;
+			Program.LeagueClientHWND = GetLeagueClientHandle( );
+			Console.WriteLine( "League of Legends(RCLIENT) handle : " + Program.LeagueClientHWND.ToInt64( ) );
 
-			Point point = new Point( );
-			Size size = new Size( );
-
-			WinAPI.GetWindowPos( hwnd, ref point, ref size );
-
-			Working working = new Working( );
-			working.Show( );
-
-			WinAPI.SetWindowPos( working.Handle, -1, 0, 0, 0, 0, 10 );
-			WinAPI.SetParent( working.Handle, hwnd );
-			working.SetBounds( size.Width / 2 - 150 / 2, 0, 150, 50, BoundsSpecified.All );
-			//working.Invalidate( );
-			//SetHook( );
-
-
+			(Point point, Size size) = WinAPI.GetWindowPos( Program.LeagueClientHWND );
 
 			HotKeyManager.RegisterHotKey( Keys.F1, KeyModifiers.NoRepeat );
 			HotKeyManager.RegisterHotKey( Keys.F2, KeyModifiers.NoRepeat );
+			//HotKeyManager.RegisterHotKey( Keys.F3, KeyModifiers.NoRepeat );
 			HotKeyManager.HotKeyPressed += ( object sender, HotKeyEventArgs e ) =>
 			{
 				if ( e.Key == Keys.F1 )
 					Pick( );
 				else if ( e.Key == Keys.F2 )
 					GameAgree( );
+				else if ( e.Key == Keys.F3 )
+					AssistantAgentProvider.Kill( );
 			};
 
-			//MoveWindow( hwnd, 0, 100, 1600, 900, true );sd
+			//MoveWindow( hwnd, 0, 100, 1600, 900, true );
 
-			AutoHotkeyWorker.Start( );
+			//string[] champs = RiotAPI.GetChampionIDList( );
+			//foreach ( var i in champs )
+			//	Console.WriteLine( i );
+
+			AssistantAgentProvider.Start( );
 			//LCULocalPreferences lCU = new LCULocalPreferences( );
 			//Console.WriteLine( lCU.GetValue( "lol-audio/data/loginMusicEnabled", "fuck" ) );
 
 
+			//Application.EnableVisualStyles( );
+			//Application.SetCompatibleTextRenderingDefault( false );
+
+			Working working = new Working( );
+			working.Show( );
+			WinAPI.SetWindowPos( working.Handle, -1, 0, 0, 0, 0, 10 );
+			WinAPI.SetParent( working.Handle, Program.LeagueClientHWND );
+			working.SetBounds( size.Width / 2 - 200 / 2, 0, 200, 30, BoundsSpecified.All );
 			Application.Run( working );
+
+
+
+
 
 			//while ( true )
 			//{
@@ -224,7 +255,7 @@ namespace Tester
 		}
 
 		static IntPtr hhook;
-		
+
 		public static IntPtr GetLeagueClientHandle( )
 		{
 			IntPtr hwnd = WinAPI.FindWindow( "RCLIENT", "League of Legends" );
@@ -237,20 +268,20 @@ namespace Tester
 			return IntPtr.Zero;
 		}
 
-		public struct WindowsProperty
-		{
-			public Point pos;
-			public Size size;
-		}
+		//public struct WindowsProperty
+		//{
+		//	public Point pos;
+		//	public Size size;
+		//}
 
-		public static WindowsProperty GetLeagueClientWindowPosSize( IntPtr handle )
-		{
-			WindowsProperty property = new WindowsProperty( );
+		//public static WindowsProperty GetLeagueClientWindowPosSize( IntPtr handle )
+		//{
+		//	WindowsProperty property = new WindowsProperty( );
 
-			WinAPI.GetWindowPos( handle, ref property.pos, ref property.size );
+		//	WinAPI.GetWindowPos( handle, ref property.pos, ref property.size );
 
-			return property;
-		}
+		//	return property;
+		//}
 
 		public static IntPtr LeagueClientHandle
 		{
@@ -260,15 +291,9 @@ namespace Tester
 
 		static void Pick( )
 		{
-			IntPtr hwnd = WinAPI.FindWindow( "RCLIENT", "League of Legends" );
-			IntPtr hwnd2 = WinAPI.FindWindowEx( hwnd, 0, "CefBrowserWindow", "" );
+			(Point point, Size size) = WinAPI.GetWindowPos( Program.LeagueClientHWND );
 
-			Point point = new Point( );
-			Size size = new Size( );
-
-			WinAPI.GetWindowPos( hwnd, ref point, ref size );
-
-			Console.WriteLine( "0x" + hwnd.ToInt32( ) + " address, child 0x" + hwnd2.ToInt32( ) + " x, y : " + point.ToString( ) + " / w, h : " + size.ToString( ) );
+			Console.WriteLine( "0x" + Program.LeagueClientHWND.ToInt32( ) + " address, x, y : " + point.ToString( ) + " / w, h : " + size.ToString( ) );
 
 			WinAPI.SetCursorPos( point.X + 100, point.Y + size.Height - 20 );
 			WinAPI.MouseEvent( WinAPI.LBDOWN | WinAPI.LBUP, 0, 0, 0, 0 ); // 왼쪽 버튼 누르고 떼고
@@ -277,8 +302,6 @@ namespace Tester
 
 			Console.WriteLine( "Typed line -> mid." );
 			TextPaste( "ㅁㄷ", true );
-
-
 
 			Thread.Sleep( 200 );
 
@@ -373,16 +396,11 @@ namespace Tester
 
 		public static void GameAgree( )
 		{
-			IntPtr hwnd = WinAPI.FindWindow( "RCLIENT", "League of Legends" );
-			IntPtr hwnd2 = WinAPI.FindWindowEx( hwnd, 0, "CefBrowserWindow", "" );
+			(Point point, Size size) = WinAPI.GetWindowPos( Program.LeagueClientHWND );
 
-			Point point = new Point( );
-			Size size = new Size( );
-
-			WinAPI.GetWindowPos( hwnd, ref point, ref size );
-			Console.WriteLine( "0x" + hwnd.ToInt32( ) + " address, child 0x" + hwnd2.ToInt32( ) + " x, y : " + point.ToString( ) + " / w, h : " + size.ToString( ) );
+			Console.WriteLine( "0x" + Program.LeagueClientHWND.ToInt32( ) + " address, x, y : " + point.ToString( ) + " / w, h : " + size.ToString( ) );
 			WinAPI.SetCursorPos( point.X + ( size.Width / 2 ), point.Y + size.Height - 125 ); // 100 -> 거절, 125 -> 수락
-			WinAPI.MouseEvent( WinAPI.LBDOWN | WinAPI.LBUP, 0, 0, 0, 0 ); // 왼쪽 버튼 누르고 떼고
+			WinAPI.MouseEvent( WinAPI.LBDOWN | WinAPI.LBUP, 0, 0, 0, 0 );
 
 			Console.WriteLine( "Game agreed." );
 		}

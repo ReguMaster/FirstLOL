@@ -10,6 +10,7 @@ namespace Tester
 {
 	public class LCULocalPreferences : IDisposable
 	{
+		private bool disposed = false;
 		private TextReader Reader
 		{
 			set;
@@ -24,6 +25,7 @@ namespace Tester
 
 		public LCULocalPreferences( )
 		{
+			// TODO : 파일 로케이션 관련 수정 필요함.
 			TextReader reader = new StreamReader( @"D:\Program\Riot Games\League of Legends\Config\LCULocalPreferences.yaml" ); // TODO : 수정할 것
 			YamlStream stream = new YamlStream( );
 			stream.Load( reader );
@@ -32,6 +34,7 @@ namespace Tester
 			this.Stream = stream;
 		}
 
+		// 재귀 메소드 /test/test/test/test loop
 		protected void GetValueInternal( ref YamlNode node, string[ ] selector, int curIndex, Action<YamlNode> callback )
 		{
 			if ( curIndex < selector.Length )
@@ -69,14 +72,24 @@ namespace Tester
 
 		public void Dispose( )
 		{
-			if ( this.Reader != null )
-				this.Reader.Close( );
+			Dispose( true );
+			GC.SuppressFinalize( this );
+		}
+
+		protected virtual void Dispose( bool disposing )
+		{
+			if ( !disposed )
+			{
+				if ( disposing )
+					this.Reader.Dispose( );
+
+				disposed = true;
+			}
 		}
 
 		~LCULocalPreferences( )
 		{
-			if ( this.Reader != null )
-				this.Reader.Close( );
+			Dispose( false );
 		}
 	}
 }
